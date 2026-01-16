@@ -11,6 +11,8 @@ interface UFOGlobeProps {
 const UFOGlobe: React.FC<UFOGlobeProps> = ({ sightings }) => {
   const globeEl = useRef<GlobeMethods | undefined>(undefined);
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
+  const [globeLoaded, setGlobeLoaded] = useState(false);
+  const [globeError, setGlobeError] = useState(false);
 
   useEffect(() => {
     const updateDimensions = () => {
@@ -29,12 +31,29 @@ const UFOGlobe: React.FC<UFOGlobeProps> = ({ sightings }) => {
   }, []);
 
   useEffect(() => {
-    if (globeEl.current) {
-      globeEl.current.controls().autoRotate = true;
-      globeEl.current.controls().autoRotateSpeed = 0.3;
-      globeEl.current.pointOfView({ lat: 20, lng: -50, altitude: 2.5 }, 2000);
+    // Check for WebGL support
+    if (typeof window !== 'undefined') {
+      const canvas = document.createElement('canvas');
+      const gl = canvas.getContext('webgl2') || canvas.getContext('webgl');
+      if (!gl) {
+        setGlobeError(true);
+      }
     }
   }, []);
+
+  useEffect(() => {
+    if (globeEl.current && !globeError) {
+      try {
+        globeEl.current.controls().autoRotate = true;
+        globeEl.current.controls().autoRotateSpeed = 0.3;
+        globeEl.current.pointOfView({ lat: 20, lng: -50, altitude: 2.5 }, 2000);
+        setGlobeLoaded(true);
+      } catch (e) {
+        console.error('Globe initialization error:', e);
+        setGlobeError(true);
+      }
+    }
+  }, [globeError]);
 
   // Convert sightings to globe points
   const points = sightings.map(sighting => ({
@@ -63,6 +82,18 @@ const UFOGlobe: React.FC<UFOGlobeProps> = ({ sightings }) => {
       'Cone': '#84cc16'
     };
     return colors[shape] || '#ffffff';
+  }
+
+  if (globeError) {
+    return (
+      <div id="globe-container" style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div className="text-center">
+          <div className="text-6xl mb-4">🌍</div>
+          <p className="text-white text-lg">Globe View</p>
+          <p className="text-gray-400 text-sm mt-2">WebGL not available</p>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -100,6 +131,12 @@ const UFOGlobe: React.FC<UFOGlobeProps> = ({ sightings }) => {
         
         // Polygon outlines
         polygonsData={[]}
+        
+        onGlobeClick={() => {
+          if (globeEl.current) {
+            globeEl.current.pointOfView({ lat: 30, lng: -50, altitude: 2.5 }, 1000);
+          }
+        }}
       />
     </div>
   );
