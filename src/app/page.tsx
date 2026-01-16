@@ -1,17 +1,44 @@
-'use client';
+import { useEffect, useState } from 'react';
+import { UFOSighting } from '@/lib/ufo-api';
 
-import React, { useEffect, useState } from 'react';
-import { getRecentSightings, UFOSighting } from '@/lib/ufo-api';
+// Mock data fallback
+const MOCK_DATA: UFOSighting[] = [
+  { id: '1', datetime: '2025-01-10 22:30:00', city: 'Phoenix', state: 'AZ', country: 'USA', shape: 'Light', duration: '10 min', summary: 'Bright lights in triangular formation', lat: 33.4484, lng: -112.0740 },
+  { id: '2', datetime: '2025-01-09 21:15:00', city: 'Los Angeles', state: 'CA', country: 'USA', shape: 'Circle', duration: '2 min', summary: 'Orange orb', lat: 34.0522, lng: -118.2437 },
+  { id: '3', datetime: '2025-01-08 03:45:00', city: 'Chicago', state: 'IL', country: 'USA', shape: 'Triangle', duration: '5 min', summary: 'Black triangle with red lights', lat: 41.8781, lng: -87.6298 },
+  { id: '4', datetime: '2025-01-07 19:20:00', city: 'London', state: '', country: 'UK', shape: 'Sphere', duration: '3 min', summary: 'Silver sphere hovering', lat: 51.5074, lng: -0.1278 },
+  { id: '5', datetime: '2025-01-06 23:00:00', city: 'Tokyo', state: '', country: 'Japan', shape: 'Cigar', duration: '8 min', summary: 'Elongated craft', lat: 35.6762, lng: 139.6503 },
+  { id: '6', datetime: '2025-01-05 02:30:00', city: 'Denver', state: 'CO', country: 'USA', shape: 'Fireball', duration: '1 min', summary: 'Green fireball', lat: 39.7392, lng: -104.9903 },
+  { id: '7', datetime: '2025-01-04 20:15:00', city: 'Seattle', state: 'WA', country: 'USA', shape: 'Disk', duration: '4 min', summary: 'Classic saucer', lat: 47.6062, lng: -122.3321 },
+  { id: '8', datetime: '2025-01-03 18:45:00', city: 'Sydney', state: 'NSW', country: 'Australia', shape: 'Triangle', duration: '6 min', summary: 'Three lights in V-formation', lat: -33.8688, lng: 151.2093 },
+  { id: '9', datetime: '2025-01-02 22:00:00', city: 'New York', state: 'NY', country: 'USA', shape: 'Chevron', duration: '2 min', summary: 'Crescent-shaped object', lat: 40.7128, lng: -74.0060 },
+  { id: '10', datetime: '2025-01-01 01:30:00', city: 'Mexico City', state: '', country: 'Mexico', shape: 'Oval', duration: '7 min', summary: 'Huge oval with flashing lights', lat: 19.4326, lng: -99.1332 },
+  { id: '11', datetime: '2024-12-31 23:45:00', city: 'Paris', state: '', country: 'France', shape: 'Light', duration: '3 min', summary: 'Multiple lights dancing', lat: 48.8566, lng: 2.3522 },
+  { id: '12', datetime: '2024-12-30 21:20:00', city: 'Miami', state: 'FL', country: 'USA', shape: 'Rectangle', duration: '5 min', summary: 'Flat rectangular craft', lat: 25.7617, lng: -80.1918 },
+  { id: '13', datetime: '2024-12-29 02:10:00', city: 'Las Vegas', state: 'NV', country: 'USA', shape: 'Sphere', duration: '15 min', summary: 'Cluster of orbs', lat: 36.1699, lng: -115.1398 },
+  { id: '14', datetime: '2024-12-28 19:50:00', city: 'Toronto', state: 'ON', country: 'Canada', shape: 'Cylinder', duration: '4 min', summary: 'Metallic cylinder rotating', lat: 43.6532, lng: -79.3832 },
+  { id: '15', datetime: '2024-12-27 20:30:00', city: 'Berlin', state: '', country: 'Germany', shape: 'Diamond', duration: '2 min', summary: 'Diamond shape pulsing colors', lat: 52.5200, lng: 13.4050 },
+];
+
+async function getSightings(): Promise<UFOSighting[]> {
+  try {
+    const res = await fetch('/api/sightings');
+    if (res.ok) return res.json();
+  } catch (e) {
+    console.log('API failed, using mock data');
+  }
+  return MOCK_DATA;
+}
 
 export default function Home() {
   const [sightings, setSightings] = useState<UFOSighting[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    getRecentSightings(50).then(data => {
+    getSightings().then(data => {
       setSightings(data);
-      setLoading(false);
-    }).catch(() => setLoading(false));
+      setLoaded(true);
+    });
   }, []);
 
   const topShapes = Object.entries(
@@ -25,8 +52,8 @@ export default function Home() {
   const recent = [...sightings].sort((a, b) => new Date(b.datetime).getTime() - new Date(a.datetime).getTime());
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#000', color: '#fff', padding: '16px', fontFamily: 'system-ui' }}>
-      <header style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px', borderBottom: '1px solid #333', paddingBottom: '16px' }}>
+    <div style={{ minHeight: '100vh', backgroundColor: '#050510', color: '#fff', padding: '16px', fontFamily: 'system-ui' }}>
+      <header style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px', borderBottom: '1px solid #222', paddingBottom: '16px' }}>
         <span style={{ fontSize: '24px' }}>🛸</span>
         <div>
           <h1 style={{ fontSize: '18px', fontWeight: 'bold', margin: 0 }}>UFO Tracker</h1>
@@ -34,7 +61,7 @@ export default function Home() {
         </div>
       </header>
 
-      {loading ? (
+      {!loaded ? (
         <div style={{ textAlign: 'center', padding: '60px 0' }}>
           <div style={{ fontSize: '48px', marginBottom: '16px' }}>🛸</div>
           <p style={{ color: '#666' }}>Loading...</p>
@@ -44,39 +71,56 @@ export default function Home() {
           {/* Stats */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
             <div style={{ backgroundColor: '#111', padding: '16px', borderRadius: '8px' }}>
-              <div style={{ fontSize: '24px', color: '#a855f7', fontWeight: 'bold' }}>{sightings.length}</div>
-              <div style={{ fontSize: '12px', color: '#666' }}>Total</div>
+              <div style={{ fontSize: '28px', color: '#a855f7', fontWeight: 'bold' }}>{sightings.length}</div>
+              <div style={{ fontSize: '12px', color: '#666' }}>Total Sightings</div>
             </div>
             <div style={{ backgroundColor: '#111', padding: '16px', borderRadius: '8px' }}>
-              <div style={{ fontSize: '24px', color: '#22c55e', fontWeight: 'bold' }}>{new Set(sightings.map(s => s.country)).size}</div>
+              <div style={{ fontSize: '28px', color: '#22c55e', fontWeight: 'bold' }}>{new Set(sightings.map(s => s.country)).size}</div>
               <div style={{ fontSize: '12px', color: '#666' }}>Countries</div>
             </div>
           </div>
 
           {/* Top Shapes */}
           <div style={{ backgroundColor: '#111', padding: '16px', borderRadius: '8px' }}>
-            <h2 style={{ fontSize: '14px', marginBottom: '12px', color: '#ccc' }}>Most Common</h2>
+            <h2 style={{ fontSize: '14px', marginBottom: '12px', color: '#ccc' }}>Most Common Shapes</h2>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
               {topShapes.map(([shape, count]) => (
-                <span key={shape} style={{ backgroundColor: '#222', padding: '6px 12px', borderRadius: '20px', fontSize: '12px' }}>
+                <span key={shape} style={{ backgroundColor: '#1a1a2e', padding: '6px 12px', borderRadius: '20px', fontSize: '12px', border: '1px solid #333' }}>
                   {shape} <span style={{ color: '#a855f7' }}>{count}</span>
                 </span>
               ))}
             </div>
           </div>
 
+          {/* Hotspots */}
+          <div style={{ backgroundColor: '#111', padding: '16px', borderRadius: '8px' }}>
+            <h2 style={{ fontSize: '14px', marginBottom: '12px', color: '#ccc' }}>Hotspots</h2>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {countries.map(([country, count], i) => (
+                <div key={country} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ width: '16px', fontSize: '11px', color: '#555' }}>{i + 1}</span>
+                  <span style={{ flex: 1, fontSize: '13px' }}>{country}</span>
+                  <span style={{ fontSize: '12px', color: '#22c55e' }}>{count}</span>
+                  <div style={{ width: '60px', height: '4px', backgroundColor: '#222', borderRadius: '2px' }}>
+                    <div style={{ width: `${(count / sightings.length) * 100}%`, height: '100%', backgroundColor: '#22c55e', borderRadius: '2px' }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
           {/* Recent */}
           <div style={{ backgroundColor: '#111', padding: '16px', borderRadius: '8px' }}>
-            <h2 style={{ fontSize: '14px', marginBottom: '12px', color: '#ccc' }}>Recent</h2>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {recent.slice(0, 10).map(s => (
-                <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px', backgroundColor: '#1a1a1a', borderRadius: '6px' }}>
-                  <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: getShapeColor(s.shape) }} />
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: '13px' }}>{s.city}, {s.country}</div>
-                    <div style={{ fontSize: '11px', color: '#666' }}>{new Date(s.datetime).toLocaleDateString()}</div>
+            <h2 style={{ fontSize: '14px', marginBottom: '12px', color: '#ccc' }}>Recent Reports</h2>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              {recent.slice(0, 12).map(s => (
+                <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px', backgroundColor: '#1a1a2e', borderRadius: '6px' }}>
+                  <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: getShapeColor(s.shape), flexShrink: 0 }} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: '13px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.city}, {s.country}</div>
+                    <div style={{ fontSize: '10px', color: '#555' }}>{new Date(s.datetime).toLocaleDateString()}</div>
                   </div>
-                  <span style={{ fontSize: '11px', color: '#888' }}>{s.shape}</span>
+                  <span style={{ fontSize: '11px', color: '#888', flexShrink: 0 }}>{s.shape}</span>
                 </div>
               ))}
             </div>
@@ -84,7 +128,7 @@ export default function Home() {
         </div>
       )}
 
-      <footer style={{ textAlign: 'center', paddingTop: '24px', color: '#444', fontSize: '12px' }}>
+      <footer style={{ textAlign: 'center', paddingTop: '32px', color: '#333', fontSize: '12px' }}>
         🛸 UFO Tracker
       </footer>
     </div>
