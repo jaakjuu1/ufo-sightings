@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { getRecentSightings, UFOSighting } from '@/lib/ufo-api';
 
-const UFOMap = dynamic(() => import('@/components/UFOMap'), { ssr: false });
+const SightingMap = dynamic(() => import('@/components/SightingMap'), { ssr: false });
 
 export default function Home() {
   const [sightings, setSightings] = useState<UFOSighting[]>([]);
@@ -78,7 +78,7 @@ export default function Home() {
                 border: '1px solid rgba(168, 85, 247, 0.3)',
                 boxShadow: '0 0 40px rgba(168, 85, 247, 0.1)'
               }}>
-                <UFOMap sightings={sightings} />
+                <SightingMap sightings={sightings} />
               </div>
 
               {/* Sidebar */}

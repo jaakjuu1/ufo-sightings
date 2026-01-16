@@ -1,23 +1,23 @@
 'use client';
 
 import React, { useEffect, useRef } from 'react';
-import L from 'leaflet';
+import Map from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { UFOSighting } from '@/lib/ufo-api';
 
-interface MapProps {
+interface SightingMapProps {
   sightings: UFOSighting[];
 }
 
-const UFOMap: React.FC<MapProps> = ({ sightings }) => {
+const SightingMap: React.FC<SightingMapProps> = ({ sightings }) => {
   const mapRef = useRef<HTMLDivElement>(null);
-  const mapInstanceRef = useRef<L.Map | null>(null);
+  const mapInstanceRef = useRef<Map.Map | null>(null);
 
   useEffect(() => {
     if (!mapRef.current || mapInstanceRef.current) return;
 
     // Create map
-    const map = L.map(mapRef.current, {
+    const map = Map.map(mapRef.current, {
       center: [30, -50],
       zoom: 2,
       minZoom: 2,
@@ -27,31 +27,31 @@ const UFOMap: React.FC<MapProps> = ({ sightings }) => {
     });
 
     // Dark themed tiles (CartoDB Dark Matter)
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    Map.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
       maxZoom: 19
     }).addTo(map);
 
     // Add zoom control to bottom right
-    L.control.zoom({ position: 'bottomright' }).addTo(map);
+    Map.control.zoom({ position: 'bottomright' }).addTo(map);
 
     // Custom UFO marker icon
-    const ufoIcon = L.divIcon({
+    const ufoIcon = Map.divIcon({
       className: 'ufo-marker',
       html: `<div style="
-        width: 12px;
-        height: 12px;
+        width: 14px;
+        height: 14px;
         background: #a855f7;
         border-radius: 50%;
         box-shadow: 0 0 10px #a855f7, 0 0 20px #a855f7;
         animation: pulse 2s infinite;
       "></div>`,
-      iconSize: [12, 12],
-      iconAnchor: [6, 6]
+      iconSize: [14, 14],
+      iconAnchor: [7, 7]
     });
 
     // Add markers for each sighting
-    sightings.forEach((s, i) => {
-      const marker = L.marker([s.lat, s.lng], { icon: ufoIcon }).addTo(map);
+    sightings.forEach((s) => {
+      const marker = Map.marker([s.lat, s.lng], { icon: ufoIcon }).addTo(map);
       
       // Popup with details
       const popupContent = `
@@ -105,4 +105,4 @@ const UFOMap: React.FC<MapProps> = ({ sightings }) => {
   );
 };
 
-export default Map;
+export default SightingMap;
