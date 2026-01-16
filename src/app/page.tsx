@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { getRecentSightings, UFOSighting } from '@/lib/ufo-api';
 
-const SightingMap = dynamic(() => import('@/components/SightingMap'), { ssr: false });
+const Map = dynamic(() => import('@/components/SightingMap'), { ssr: false });
 
 export default function Home() {
   const [sightings, setSightings] = useState<UFOSighting[]>([]);
@@ -16,7 +16,7 @@ export default function Home() {
         const data = await getRecentSightings(50);
         setSightings(data);
       } catch (error) {
-        console.error('Failed to load sightings:', error);
+        console.error('Failed:', error);
       } finally {
         setLoading(false);
       }
@@ -26,195 +26,151 @@ export default function Home() {
 
   const topShapes = Object.entries(
     sightings.reduce((acc, s) => { acc[s.shape] = (acc[s.shape] || 0) + 1; return acc; }, {} as Record<string, number>)
-  ).sort((a, b) => b[1] - a[1]).slice(0, 5);
+  ).sort((a, b) => b[1] - a[1]).slice(0, 4);
 
-  const topCountries = Object.entries(
-    sightings.reduce((acc, s) => { acc[s.country] = (acc[s.country] || 0) + 1; return acc; }, {} as Record<string, number>)
-  ).sort((a, b) => b[1] - a[1]).slice(0, 5);
+  const recentSightings = [...sightings].sort((a, b) => new Date(b.datetime).getTime() - new Date(a.datetime).getTime());
 
   return (
-    <main className="min-h-screen bg-black text-white">
-      {/* Animated Stars */}
-      <StarsBackground />
+    <div className="min-h-screen bg-[#050510] text-white overflow-x-hidden">
+      {/* Animated background */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-purple-900/20 via-[#050510] to-[#050510]" />
+        {Array.from({ length: 50 }).map((_, i) => (
+          <div
+            key={i}
+            className="star absolute bg-white rounded-full animate-twinkle"
+            style={{
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+              width: Math.random() * 2 + 1,
+              height: Math.random() * 2 + 1,
+              animationDelay: `${Math.random() * 3}s`
+            }}
+          />
+        ))}
+      </div>
 
       {/* Header */}
-      <header style={{ position: 'relative', zIndex: 20, padding: '1.5rem' }}>
-        <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <span style={{ fontSize: '2rem', animation: 'float 3s ease-in-out infinite' }}>🛸</span>
+      <header className="relative z-10 px-4 py-4 border-b border-white/10">
+        <div className="max-w-4xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <span className="text-2xl animate-float">🛸</span>
             <div>
-              <h1 style={{ fontSize: '1.5rem', fontWeight: 'bold', margin: 0, textShadow: '0 0 20px rgba(168, 85, 247, 0.5)' }}>UFO Tracker</h1>
-              <p style={{ fontSize: '0.875rem', color: '#a855f7', margin: 0 }}>Real-time global sightings</p>
+              <h1 className="text-lg font-bold bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
+                UFO Tracker
+              </h1>
+              <p className="text-xs text-gray-500">{sightings.length} reports tracked</p>
             </div>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', color: '#9ca3af' }}>
-              <span style={{ width: '8px', height: '8px', background: '#22c55e', borderRadius: '50%', animation: 'pulse 2s infinite' }}></span>
-              {sightings.length} reports
-            </div>
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+            <span className="text-xs text-gray-500">Live</span>
           </div>
         </div>
       </header>
 
-      {/* Main Content */}
-      <div style={{ position: 'relative', zIndex: 10, padding: '0 1.5rem 1.5rem' }}>
-        <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-          
-          {loading ? (
-            <div style={{ height: 'calc(100vh - 200px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: '4rem', marginBottom: '1rem', animation: 'bounce 1s infinite' }}>🛸</div>
-                <p style={{ fontSize: '1.125rem' }}>Scanning for UFOs...</p>
+      <main className="relative z-10 max-w-4xl mx-auto px-4 py-4 space-y-4">
+        {loading ? (
+          <div className="h-64 flex items-center justify-center">
+            <div className="text-center">
+              <div className="text-4xl animate-bounce mb-2">🛸</div>
+              <p className="text-gray-400">Scanning...</p>
+            </div>
+          </div>
+        ) : (
+          <>
+            {/* Map */}
+            <div className="relative rounded-2xl overflow-hidden border border-white/10 h-64">
+              <Map sightings={sightings} />
+              <div className="absolute bottom-3 left-3 bg-black/70 px-2 py-1 rounded text-xs text-gray-400">
+                {sightings.length} locations
               </div>
             </div>
-          ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: '1.5rem' }}>
-              
-              {/* Map */}
-              <div style={{ 
-                background: 'rgba(17, 24, 39, 0.7)', 
-                borderRadius: '1rem', 
-                overflow: 'hidden',
-                border: '1px solid rgba(168, 85, 247, 0.3)',
-                boxShadow: '0 0 40px rgba(168, 85, 247, 0.1)'
-              }}>
-                <SightingMap sightings={sightings} />
-              </div>
 
-              {/* Sidebar */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                
-                {/* Stats */}
-                <div style={{ background: 'rgba(17, 24, 39, 0.8)', borderRadius: '1rem', padding: '1.25rem', border: '1px solid rgba(168, 85, 247, 0.2)' }}>
-                  <h3 style={{ fontSize: '1rem', fontWeight: 'bold', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <span>📊</span> Statistics
-                  </h3>
-                  
-                  <div style={{ 
-                    textAlign: 'center', 
-                    background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.2), rgba(59, 130, 246, 0.2))', 
-                    borderRadius: '0.75rem', 
-                    padding: '1rem', 
-                    marginBottom: '1rem'
-                  }}>
-                    <div style={{ fontSize: '2.5rem', fontWeight: 'bold', background: 'linear-gradient(135deg, #a855f7, #3b82f6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                      {sightings.length}
+            {/* Stats row */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="bg-white/5 rounded-xl p-3 border border-white/5">
+                <p className="text-2xl font-bold text-purple-400">{sightings.length}</p>
+                <p className="text-xs text-gray-500">Total Sightings</p>
+              </div>
+              <div className="bg-white/5 rounded-xl p-3 border border-white/5">
+                <p className="text-2xl font-bold text-blue-400">{new Set(sightings.map(s => s.country)).size}</p>
+                <p className="text-xs text-gray-500">Countries</p>
+              </div>
+            </div>
+
+            {/* Top Shapes */}
+            <div className="bg-white/5 rounded-xl p-4 border border-white/5">
+              <h2 className="text-sm font-semibold text-gray-300 mb-3">Most Common</h2>
+              <div className="flex flex-wrap gap-2">
+                {topShapes.map(([shape, count]) => (
+                  <span
+                    key={shape}
+                    className="px-3 py-1 rounded-full text-xs bg-purple-500/20 text-purple-300 border border-purple-500/30"
+                  >
+                    {shape} <span className="text-purple-400">{count}</span>
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            {/* Recent Sightings */}
+            <div className="bg-white/5 rounded-xl p-4 border border-white/5">
+              <h2 className="text-sm font-semibold text-gray-300 mb-3">Recent Reports</h2>
+              <div className="space-y-2">
+                {recentSightings.slice(0, 10).map(s => (
+                  <div
+                    key={s.id}
+                    className="flex items-center gap-3 p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors cursor-pointer"
+                  >
+                    <div
+                      className="w-3 h-3 rounded-full flex-shrink-0"
+                      style={{ backgroundColor: getShapeColor(s.shape) }}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{s.city}, {s.country}</p>
+                      <p className="text-xs text-gray-500">{new Date(s.datetime).toLocaleDateString()}</p>
                     </div>
-                    <div style={{ fontSize: '0.75rem', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Total Sightings</div>
+                    <span className="text-xs text-gray-400 px-2 py-1 rounded bg-white/5">
+                      {s.shape}
+                    </span>
                   </div>
-                  
-                  <div style={{ marginBottom: '0.75rem' }}>
-                    <h4 style={{ fontSize: '0.7rem', color: '#6b7280', textTransform: 'uppercase', marginBottom: '0.5rem', letterSpacing: '0.05em' }}>Top Shapes</h4>
-                    {topShapes.map(([shape, count], i) => (
-                      <div key={shape} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem' }}>
-                        <span style={{ width: '1rem', fontSize: '0.7rem', color: '#6b7280' }}>{i + 1}</span>
-                        <span style={{ flex: 1, fontSize: '0.8rem', color: '#e5e7eb' }}>{shape}</span>
-                        <span style={{ fontSize: '0.8rem', color: '#a855f7', fontWeight: 500 }}>{count}</span>
-                        <div style={{ width: '50px', height: '3px', background: '#374151', borderRadius: '2px' }}>
-                          <div style={{ width: `${(count / sightings.length) * 100}%`, height: '100%', background: 'linear-gradient(90deg, #a855f7, #3b82f6)', borderRadius: '2px', transition: 'width 0.5s ease' }}></div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  
-                  <div>
-                    <h4 style={{ fontSize: '0.7rem', color: '#6b7280', textTransform: 'uppercase', marginBottom: '0.5rem', letterSpacing: '0.05em' }}>Hotspots</h4>
-                    {topCountries.map(([country, count], i) => (
-                      <div key={country} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem' }}>
-                        <span style={{ width: '1rem', fontSize: '0.7rem', color: '#6b7280' }}>{i + 1}</span>
-                        <span style={{ flex: 1, fontSize: '0.8rem', color: '#e5e7eb' }}>{country}</span>
-                        <span style={{ fontSize: '0.8rem', color: '#22c55e', fontWeight: 500 }}>{count}</span>
-                        <div style={{ width: '50px', height: '3px', background: '#374151', borderRadius: '2px' }}>
-                          <div style={{ width: `${(count / sightings.length) * 100}%`, height: '100%', background: 'linear-gradient(90deg, #22c55e, #10b981)', borderRadius: '2px', transition: 'width 0.5s ease' }}></div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Recent List */}
-                <div style={{ flex: 1, background: 'rgba(17, 24, 39, 0.8)', borderRadius: '1rem', padding: '1.25rem', border: '1px solid rgba(168, 85, 247, 0.2)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-                  <h3 style={{ fontSize: '1rem', fontWeight: 'bold', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <span>📋</span> Recent
-                  </h3>
-                  <div style={{ flex: 1, overflowY: 'auto', paddingRight: '0.5rem' }}>
-                    {sightings.slice(0, 12).map(s => (
-                      <div key={s.id} style={{ 
-                        padding: '0.75rem', 
-                        marginBottom: '0.5rem', 
-                        background: 'rgba(31, 41, 55, 0.5)', 
-                        borderRadius: '0.5rem',
-                        border: '1px solid transparent',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s'
-                      }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
-                          <span style={{ fontWeight: 500, fontSize: '0.875rem' }}>{s.city}, {s.country}</span>
-                          <span style={{ fontSize: '0.7rem', color: '#9ca3af' }}>{new Date(s.datetime).toLocaleDateString()}</span>
-                        </div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <span style={{ fontSize: '0.75rem', color: '#a855f7' }}>{s.shape}</span>
-                          <span style={{ fontSize: '0.7rem', color: '#6b7280' }}>{s.duration}</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                ))}
               </div>
             </div>
-          )}
-        </div>
-      </div>
+          </>
+        )}
+      </main>
+
+      <footer className="relative z-10 text-center py-4 text-xs text-gray-600">
+        🛸 UFO Tracker {new Date().getFullYear()}
+      </footer>
 
       <style jsx>{`
         @keyframes float {
           0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-10px); }
+          50% { transform: translateY(-5px); }
         }
-        @keyframes pulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.5; }
+        @keyframes twinkle {
+          0%, 100% { opacity: 0.3; }
+          50% { opacity: 1; }
         }
         @keyframes bounce {
           0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-10px); }
+          50% { transform: translateY(-8px); }
         }
       `}</style>
-    </main>
+    </div>
   );
 }
 
-function StarsBackground() {
-  const [stars, setStars] = useState<{ id: number; left: number; top: number; size: number; delay: number }[]>([]);
-
-  useEffect(() => {
-    setStars(Array.from({ length: 80 }, (_, i) => ({
-      id: i,
-      left: Math.random() * 100,
-      top: Math.random() * 100,
-      size: Math.random() * 2 + 1,
-      delay: Math.random() * 3
-    })));
-  }, []);
-
-  return (
-    <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 0, overflow: 'hidden' }}>
-      {stars.map(star => (
-        <div
-          key={star.id}
-          style={{
-            position: 'absolute',
-            left: `${star.left}%`,
-            top: `${star.top}%`,
-            width: `${star.size}px`,
-            height: `${star.size}px`,
-            background: 'white',
-            borderRadius: '50%',
-            animation: `twinkle ${3 + Math.random() * 2}s infinite ease-in-out`,
-            animationDelay: `${star.delay}s`
-          }}
-        />
-      ))}
-    </div>
-  );
+function getShapeColor(shape: string): string {
+  const colors: Record<string, string> = {
+    'Light': '#fbbf24', 'Circle': '#f87171', 'Triangle': '#22d3ee',
+    'Sphere': '#a78bfa', 'Cigar': '#fb923c', 'Fireball': '#ef4444',
+    'Disk': '#06b6d4', 'Chevron': '#8b5cf6', 'Oval': '#f472b6',
+    'Rectangle': '#14b8a6', 'Orb': '#f472b6', 'Cylinder': '#94a3b8',
+    'Diamond': '#fbbf24', 'Cone': '#84cc16'
+  };
+  return colors[shape] || '#ffffff';
 }
