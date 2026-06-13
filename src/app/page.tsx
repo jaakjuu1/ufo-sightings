@@ -5,6 +5,7 @@ import {
 } from '@/lib/types';
 import { StatCard, BarList, ColumnChart, StackedColumns, Panel } from '@/components/charts';
 import Explorer from '@/components/Explorer';
+import LiveFeed from '@/components/LiveFeed';
 
 const stats = statsData as Stats;
 
@@ -83,6 +84,9 @@ export default function Home() {
         <StatCard value={stats.shapes} label="Distinct shapes" accent="#fb923c" />
       </section>
 
+      {/* live freshest reports straight from NUFORC (renders only when reachable) */}
+      <LiveFeed />
+
       <div className="grid">
         <Panel title="Reports per year" subtitle={`A steady rise from a handful in the 1950s to a peak in ${peakYear.year}.`} wide>
           <ColumnChart data={yearCols} ticks={yearTicks} accent="#a855f7" height={170} highlightMax />
@@ -141,8 +145,11 @@ export default function Home() {
 
       <footer className="footer">
         <p>
-          Data: {stats.source.name} via {stats.source.via}. Reports are eyewitness accounts,
-          unverified and inherently subjective. Built {new Date(stats.generatedAt).toLocaleDateString()}.
+          Data: {stats.source.name} via {stats.source.via}.
+          {stats.liveReports ? ` ${stats.liveReports.toLocaleString()} reports merged from the live feed. ` : ' '}
+          The snapshot auto-refreshes daily; the “Latest from NUFORC” strip updates live when
+          the deployment can reach nuforc.org. Reports are eyewitness accounts — unverified and
+          inherently subjective. Snapshot built {new Date(stats.generatedAt).toLocaleDateString()}.
         </p>
       </footer>
     </main>

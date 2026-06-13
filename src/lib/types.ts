@@ -16,6 +16,7 @@ export interface Sighting {
   summary: string;
   lat: number;
   lng: number;
+  source?: string; // provenance: 'planetsig' (historical) | 'nuforc-live'
 }
 
 export interface ShapeCount { shape: string; count: number }
@@ -33,6 +34,7 @@ export interface Stats {
   generatedAt: string;
   source: { name: string; via: string; url: string };
   total: number;
+  liveReports?: number; // count merged in from the live NUFORC feed
   firstReport: string;
   lastReport: string;
   countries: number;
