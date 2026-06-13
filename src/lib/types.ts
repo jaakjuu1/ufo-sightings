@@ -109,6 +109,42 @@ export function shapeColor(shape: string): string {
   return SHAPE_COLORS[shape?.toLowerCase()] || '#a855f7';
 }
 
+// A short, plain-language description for each reported shape, plus a glyph.
+// Surfaced in the "Field guide to shapes" glossary so newcomers know what
+// witnesses mean by, say, "chevron" vs. "cigar".
+export const SHAPE_INFO: Record<string, { icon: string; desc: string }> = {
+  light: { icon: '🔆', desc: 'A point or glow of light with no discernible body — the single most common report.' },
+  triangle: { icon: '🔺', desc: 'A triangular craft, often described as silent, dark, and surprisingly large.' },
+  circle: { icon: '⚪', desc: 'A round object seen face-on; flatter ones are usually logged as disks.' },
+  fireball: { icon: '🔥', desc: 'A burning, fast-moving ball of light — many turn out to be meteors or re-entries.' },
+  sphere: { icon: '🔵', desc: 'A clearly three-dimensional ball, often metallic or glowing.' },
+  disk: { icon: '🛸', desc: 'The classic "flying saucer" — a flattened, plate-like craft.' },
+  oval: { icon: '🥚', desc: 'An elongated, egg- or ellipse-like outline; a stretched circle.' },
+  formation: { icon: '✨', desc: 'Several lights or objects moving together in a coordinated pattern.' },
+  cigar: { icon: '🚬', desc: 'A long, narrow, tube-shaped craft with no wings.' },
+  cylinder: { icon: '🧴', desc: 'A rounded, can-like object, often seen end-on or tumbling.' },
+  changing: { icon: '🌀', desc: 'An object reported to morph its shape during the sighting.' },
+  flash: { icon: '⚡', desc: 'A brief, bright burst of light with no lasting form.' },
+  rectangle: { icon: '▭', desc: 'A flat, box- or panel-like object with straight edges.' },
+  diamond: { icon: '🔷', desc: 'A four-pointed, kite-like outline, often with lights at the corners.' },
+  chevron: { icon: '⌄', desc: 'A shallow V or boomerang of lights, like an arrowhead.' },
+  egg: { icon: '🥚', desc: 'A smooth, ovoid craft, rounder than a cigar and seamless.' },
+  teardrop: { icon: '💧', desc: 'A rounded body tapering to a point, like a falling drop.' },
+  cone: { icon: '🔺', desc: 'A pointed, ice-cream-cone profile, wide at one end.' },
+  cross: { icon: '✝️', desc: 'An object with two perpendicular axes, like a plus sign.' },
+  unknown: { icon: '❓', desc: 'The witness could not assign a familiar shape.' },
+  other: { icon: '⬚', desc: 'A described form that fits none of the standard categories.' },
+};
+
+export function shapeInfo(shape: string): { icon: string; desc: string } {
+  return (
+    SHAPE_INFO[shape?.toLowerCase()] || {
+      icon: '◌',
+      desc: 'A rarely reported form with only a handful of accounts on record.',
+    }
+  );
+}
+
 export function titleCase(s: string): string {
   return s.replace(/\b\w/g, (c) => c.toUpperCase());
 }

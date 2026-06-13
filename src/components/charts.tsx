@@ -7,18 +7,33 @@ export function StatCard({
   label,
   sub,
   accent = '#a855f7',
+  icon,
 }: {
   value: React.ReactNode;
   label: string;
   sub?: string;
   accent?: string;
+  icon?: string;
 }) {
   return (
-    <div className="card stat-card">
+    <div className="card stat-card" style={{ ['--stat-accent' as string]: accent }}>
+      <div className="stat-glow" style={{ background: accent }} />
+      {icon && <div className="stat-icon" aria-hidden>{icon}</div>}
       <div className="stat-value" style={{ color: accent }}>{value}</div>
       <div className="stat-label">{label}</div>
       {sub && <div className="stat-sub">{sub}</div>}
     </div>
+  );
+}
+
+// A small "i" affordance that reveals an explanatory note on hover/focus.
+// Used in panel headers to explain how to read each chart.
+export function InfoDot({ text }: { text: string }) {
+  return (
+    <span className="info-dot" tabIndex={0} role="note" aria-label={text}>
+      i
+      <span className="info-pop">{text}</span>
+    </span>
   );
 }
 
@@ -168,16 +183,21 @@ export function Panel({
   subtitle,
   children,
   wide,
+  info,
 }: {
   title: string;
   subtitle?: string;
   children: React.ReactNode;
   wide?: boolean;
+  info?: string;
 }) {
   return (
     <section className={`card panel${wide ? ' panel-wide' : ''}`}>
       <div className="panel-head">
-        <h2 className="panel-title">{title}</h2>
+        <h2 className="panel-title">
+          {title}
+          {info && <InfoDot text={info} />}
+        </h2>
         {subtitle && <p className="panel-sub">{subtitle}</p>}
       </div>
       {children}
