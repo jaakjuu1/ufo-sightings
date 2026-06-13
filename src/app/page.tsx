@@ -1,133 +1,157 @@
-'use client';
+import React from 'react';
+import statsData from '@/data/stats.json';
+import {
+  type Stats, MONTH_NAMES, DOW_NAMES, shapeColor, formatDuration, titleCase,
+} from '@/lib/types';
+import { StatCard, BarList, ColumnChart, StackedColumns, Panel } from '@/components/charts';
+import Explorer from '@/components/Explorer';
+import LiveFeed from '@/components/LiveFeed';
 
-interface UFOSighting {
-  id: string;
-  datetime: string;
-  city: string;
-  state: string;
-  country: string;
-  shape: string;
-  duration: string;
-  summary: string;
-  lat: number;
-  lng: number;
-}
-
-const DATA: UFOSighting[] = [
-  { id: '1', datetime: '2025-01-10 22:30:00', city: 'Phoenix', state: 'AZ', country: 'USA', shape: 'Light', duration: '10 min', summary: 'Bright lights', lat: 33.4484, lng: -112.0740 },
-  { id: '2', datetime: '2025-01-09 21:15:00', city: 'Los Angeles', state: 'CA', country: 'USA', shape: 'Circle', duration: '2 min', summary: 'Orange orb', lat: 34.0522, lng: -118.2437 },
-  { id: '3', datetime: '2025-01-08 03:45:00', city: 'Chicago', state: 'IL', country: 'USA', shape: 'Triangle', duration: '5 min', summary: 'Black triangle', lat: 41.8781, lng: -87.6298 },
-  { id: '4', datetime: '2025-01-07 19:20:00', city: 'London', state: '', country: 'UK', shape: 'Sphere', duration: '3 min', summary: 'Silver sphere', lat: 51.5074, lng: -0.1278 },
-  { id: '5', datetime: '2025-01-06 23:00:00', city: 'Tokyo', state: '', country: 'Japan', shape: 'Cigar', duration: '8 min', summary: 'Elongated craft', lat: 35.6762, lng: 139.6503 },
-  { id: '6', datetime: '2025-01-05 02:30:00', city: 'Denver', state: 'CO', country: 'USA', shape: 'Fireball', duration: '1 min', summary: 'Green fireball', lat: 39.7392, lng: -104.9903 },
-  { id: '7', datetime: '2025-01-04 20:15:00', city: 'Seattle', state: 'WA', country: 'USA', shape: 'Disk', duration: '4 min', summary: 'Classic saucer', lat: 47.6062, lng: -122.3321 },
-  { id: '8', datetime: '2025-01-03 18:45:00', city: 'Sydney', state: 'NSW', country: 'Australia', shape: 'Triangle', duration: '6 min', summary: 'Three lights', lat: -33.8688, lng: 151.2093 },
-  { id: '9', datetime: '2025-01-02 22:00:00', city: 'New York', state: 'NY', country: 'USA', shape: 'Chevron', duration: '2 min', summary: 'Crescent-shaped', lat: 40.7128, lng: -74.0060 },
-  { id: '10', datetime: '2025-01-01 01:30:00', city: 'Mexico City', state: '', country: 'Mexico', shape: 'Oval', duration: '7 min', summary: 'Huge oval', lat: 19.4326, lng: -99.1332 },
-  { id: '11', datetime: '2024-12-31 23:45:00', city: 'Paris', state: '', country: 'France', shape: 'Light', duration: '3 min', summary: 'Multiple lights', lat: 48.8566, lng: 2.3522 },
-  { id: '12', datetime: '2024-12-30 21:20:00', city: 'Miami', state: 'FL', country: 'USA', shape: 'Rectangle', duration: '5 min', summary: 'Flat rectangular', lat: 25.7617, lng: -80.1918 },
-  { id: '13', datetime: '2024-12-29 02:10:00', city: 'Las Vegas', state: 'NV', country: 'USA', shape: 'Sphere', duration: '15 min', summary: 'Cluster of orbs', lat: 36.1699, lng: -115.1398 },
-  { id: '14', datetime: '2024-12-28 19:50:00', city: 'Toronto', state: 'ON', country: 'Canada', shape: 'Cylinder', duration: '4 min', summary: 'Metallic cylinder', lat: 43.6532, lng: -79.3832 },
-  { id: '15', datetime: '2024-12-27 20:30:00', city: 'Berlin', state: '', country: 'Germany', shape: 'Diamond', duration: '2 min', summary: 'Diamond pulsing', lat: 52.5200, lng: 13.4050 },
-];
+const stats = statsData as Stats;
 
 export default function Home() {
-  const sightings = DATA;
-  
-  const topShapes = Object.entries(
-    sightings.reduce((acc, s) => { acc[s.shape] = (acc[s.shape] || 0) + 1; return acc; }, {} as Record<string, number>)
-  ).sort((a, b) => b[1] - a[1]).slice(0, 5);
+  const cap = (s: string) => titleCase(s);
 
-  const countries = Object.entries(
-    sightings.reduce((acc, s) => { acc[s.country] = (acc[s.country] || 0) + 1; return acc; }, {} as Record<string, number>)
-  ).sort((a, b) => b[1] - a[1]).slice(0, 5);
+  // --- derive a few headline figures ---
+  const peakYear = stats.byYear.reduce((a, b) => (b.count > a.count ? b : a), stats.byYear[0]);
+  const peakHour = stats.byHour.reduce((a, b) => (b.count > a.count ? b : a), stats.byHour[0]);
+  const topShape = stats.byShape[0];
+  const fmtYear = (iso: string) => new Date(iso).getFullYear();
 
-  const recent = [...sightings].sort((a, b) => new Date(b.datetime).getTime() - new Date(a.datetime).getTime());
+  // --- chart inputs ---
+  const shapeBars = stats.byShape.slice(0, 12).map((s) => ({
+    label: cap(s.shape), value: s.count, hint: s.shape,
+  }));
+  const countryBars = stats.byCountry.map((c) => ({ label: c.name, value: c.count }));
+  const stateBars = stats.byState.slice(0, 12).map((s) => ({ label: s.name, value: s.count }));
+  const cityBars = stats.byCity.slice(0, 12).map((c) => ({
+    label: `${c.city}, ${c.state || c.country}`, value: c.count,
+  }));
+  const durationBars = stats.durationBuckets.map((b) => ({ label: b.label, value: b.count }));
+
+  const yearCols = stats.byYear.map((y) => ({ label: String(y.year), value: y.count, full: String(y.year) }));
+  const yearTicks = (() => {
+    const idx: number[] = [];
+    for (let i = 0; i < stats.byYear.length; i++) {
+      if (stats.byYear[i].year % 10 === 0) idx.push(i);
+    }
+    return idx;
+  })();
+
+  const monthCols = stats.byMonth.map((m) => ({ label: MONTH_NAMES[m.month - 1], value: m.count }));
+  const hourCols = stats.byHour.map((h) => ({
+    label: `${h.hour}`, value: h.count, full: `${h.hour}:00`,
+  }));
+  const hourTicks = [0, 3, 6, 9, 12, 15, 18, 21];
+  const dowCols = stats.byDow.map((d) => ({ label: DOW_NAMES[d.dow], value: d.count }));
+
+  const decadeRows = stats.byDecade
+    .filter((d) => d.total > 0)
+    .map((d) => ({
+      label: `${String(d.decade).slice(2)}s`,
+      total: d.total,
+      segments: stats.topShapeNames.map((k) => ({ key: k, value: (d[k] as number) || 0 })),
+    }));
+
+  const shapeColorFor = (label: string) => shapeColor(label.toLowerCase());
+
+  const explorerShapes = stats.byShape.map((s) => s.shape);
+  const explorerCountries = stats.byCountry.map((c) => ({ code: c.code, name: c.name }));
+  const yearMin = stats.byYear[0]?.year ?? 1949;
+  const yearMax = stats.byYear[stats.byYear.length - 1]?.year ?? 2014;
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#050510', color: '#fff', padding: '16px', fontFamily: 'system-ui' }}>
-      <header style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px', borderBottom: '1px solid #222', paddingBottom: '16px' }}>
-        <span style={{ fontSize: '24px' }}>🛸</span>
-        <div>
-          <h1 style={{ fontSize: '18px', fontWeight: 'bold', margin: 0 }}>UFO Tracker</h1>
-          <p style={{ fontSize: '12px', color: '#666', margin: 0 }}>{sightings.length} reports</p>
+    <main className="page">
+      <header className="hero">
+        <div className="hero-badge">🛸</div>
+        <div className="hero-text">
+          <h1>UFO Sightings Atlas</h1>
+          <p>
+            {stats.total.toLocaleString()} real reports from the{' '}
+            <a href={stats.source.url} target="_blank" rel="noreferrer">National UFO Reporting Center</a>,{' '}
+            {fmtYear(stats.firstReport)}–{fmtYear(stats.lastReport)}, across {stats.countries} countries.
+          </p>
         </div>
       </header>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-        {/* Stats */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-          <div style={{ backgroundColor: '#111', padding: '16px', borderRadius: '8px' }}>
-            <div style={{ fontSize: '28px', color: '#a855f7', fontWeight: 'bold' }}>{sightings.length}</div>
-            <div style={{ fontSize: '12px', color: '#666' }}>Total Sightings</div>
-          </div>
-          <div style={{ backgroundColor: '#111', padding: '16px', borderRadius: '8px' }}>
-            <div style={{ fontSize: '28px', color: '#22c55e', fontWeight: 'bold' }}>{new Set(sightings.map(s => s.country)).size}</div>
-            <div style={{ fontSize: '12px', color: '#666' }}>Countries</div>
-          </div>
-        </div>
+      {/* headline stats */}
+      <section className="stat-grid">
+        <StatCard value={stats.total.toLocaleString()} label="Total reports" accent="#a855f7" />
+        <StatCard value={cap(topShape.shape)} label="Most reported shape" sub={`${topShape.count.toLocaleString()} reports`} accent="#fbbf24" />
+        <StatCard value={peakYear.year} label="Peak year" sub={`${peakYear.count.toLocaleString()} reports`} accent="#22d3ee" />
+        <StatCard value={`${peakHour.hour}:00`} label="Most active hour" sub="local time of sighting" accent="#34d399" />
+        <StatCard value={formatDuration(stats.medianDurationSec)} label="Median duration" accent="#f472b6" />
+        <StatCard value={stats.shapes} label="Distinct shapes" accent="#fb923c" />
+      </section>
 
-        {/* Top Shapes */}
-        <div style={{ backgroundColor: '#111', padding: '16px', borderRadius: '8px' }}>
-          <h2 style={{ fontSize: '14px', marginBottom: '12px', color: '#ccc' }}>Most Common Shapes</h2>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-            {topShapes.map(([shape, count]) => (
-              <span key={shape} style={{ backgroundColor: '#1a1a2e', padding: '6px 12px', borderRadius: '20px', fontSize: '12px', border: '1px solid #333' }}>
-                {shape} <span style={{ color: '#a855f7' }}>{count}</span>
-              </span>
-            ))}
-          </div>
-        </div>
+      {/* live freshest reports straight from NUFORC (renders only when reachable) */}
+      <LiveFeed />
 
-        {/* Hotspots */}
-        <div style={{ backgroundColor: '#111', padding: '16px', borderRadius: '8px' }}>
-          <h2 style={{ fontSize: '14px', marginBottom: '12px', color: '#ccc' }}>Hotspots</h2>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {countries.map(([country, count], i) => (
-              <div key={country} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ width: '16px', fontSize: '11px', color: '#555' }}>{i + 1}</span>
-                <span style={{ flex: 1, fontSize: '13px' }}>{country}</span>
-                <span style={{ fontSize: '12px', color: '#22c55e' }}>{count}</span>
-                <div style={{ width: '60px', height: '4px', backgroundColor: '#222', borderRadius: '2px' }}>
-                  <div style={{ width: `${(count / sightings.length) * 100}%`, height: '100%', backgroundColor: '#22c55e', borderRadius: '2px' }} />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+      <div className="grid">
+        <Panel title="Reports per year" subtitle={`A steady rise from a handful in the 1950s to a peak in ${peakYear.year}.`} wide>
+          <ColumnChart data={yearCols} ticks={yearTicks} accent="#a855f7" height={170} highlightMax />
+        </Panel>
 
-        {/* Recent */}
-        <div style={{ backgroundColor: '#111', padding: '16px', borderRadius: '8px' }}>
-          <h2 style={{ fontSize: '14px', marginBottom: '12px', color: '#ccc' }}>Recent Reports</h2>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-            {recent.slice(0, 12).map(s => (
-              <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px', backgroundColor: '#1a1a2e', borderRadius: '6px' }}>
-                <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: getShapeColor(s.shape), flexShrink: 0 }} />
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: '13px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.city}, {s.country}</div>
-                  <div style={{ fontSize: '10px', color: '#555' }}>{new Date(s.datetime).toLocaleDateString()}</div>
-                </div>
-                <span style={{ fontSize: '11px', color: '#888', flexShrink: 0 }}>{s.shape}</span>
-              </div>
-            ))}
-          </div>
-        </div>
+        <Panel title="Most common shapes" subtitle="What people say they saw.">
+          <BarList data={shapeBars} colorFor={shapeColorFor} />
+        </Panel>
+
+        <Panel title="Time of day" subtitle="Sightings cluster sharply after dark.">
+          <ColumnChart data={hourCols} ticks={hourTicks} accent="#34d399" height={150} highlightMax />
+        </Panel>
+
+        <Panel title="By month" subtitle="Summer evenings draw the most reports.">
+          <ColumnChart data={monthCols} ticks={[0, 3, 6, 9, 11]} accent="#22d3ee" height={150} highlightMax />
+        </Panel>
+
+        <Panel title="By weekday" subtitle="Weekends edge ahead.">
+          <ColumnChart data={dowCols} ticks={[0, 1, 2, 3, 4, 5, 6]} accent="#fb923c" height={150} highlightMax />
+        </Panel>
+
+        <Panel title="How long they lasted" subtitle="Most encounters are brief.">
+          <BarList data={durationBars} accent="#f472b6" />
+        </Panel>
+
+        <Panel title="Top countries" subtitle="Reporting is heavily US-centric.">
+          <BarList data={countryBars} accent="#a855f7" />
+        </Panel>
+
+        <Panel title="Top U.S. states" subtitle="Absolute report counts.">
+          <BarList data={stateBars} accent="#22d3ee" />
+        </Panel>
+
+        <Panel title="Top cities" subtitle="Hotspots by exact locality.">
+          <BarList data={cityBars} accent="#34d399" />
+        </Panel>
+
+        <Panel title="Shape trends by decade" subtitle="Composition of the six most reported shapes over time." wide>
+          <StackedColumns rows={decadeRows} keys={stats.topShapeNames.map(cap)} colorFor={shapeColorFor} height={210} />
+        </Panel>
       </div>
 
-      <footer style={{ textAlign: 'center', paddingTop: '32px', color: '#333', fontSize: '12px' }}>
-        🛸 UFO Tracker
-      </footer>
-    </div>
-  );
-}
+      {/* interactive explorer */}
+      <section className="explorer-section">
+        <div className="panel-head">
+          <h2 className="panel-title">Explore the reports</h2>
+          <p className="panel-sub">Filter by location, shape, year or keyword. Click any point or row for the full report.</p>
+        </div>
+        <Explorer
+          shapes={explorerShapes}
+          countries={explorerCountries}
+          yearMin={yearMin}
+          yearMax={yearMax}
+        />
+      </section>
 
-function getShapeColor(shape: string): string {
-  const colors: Record<string, string> = {
-    'Light': '#fbbf24', 'Circle': '#f87171', 'Triangle': '#22d3ee',
-    'Sphere': '#a78bfa', 'Cigar': '#fb923c', 'Fireball': '#ef4444',
-    'Disk': '#06b6d4', 'Chevron': '#8b5cf6', 'Oval': '#f472b6',
-    'Rectangle': '#14b8a6', 'Orb': '#f472b6', 'Cylinder': '#94a3b8',
-    'Diamond': '#fbbf24', 'Cone': '#84cc16'
-  };
-  return colors[shape] || '#fff';
+      <footer className="footer">
+        <p>
+          Data: {stats.source.name} via {stats.source.via}.
+          {stats.liveReports ? ` ${stats.liveReports.toLocaleString()} reports merged from the live feed. ` : ' '}
+          The snapshot auto-refreshes daily; the “Latest from NUFORC” strip updates live when
+          the deployment can reach nuforc.org. Reports are eyewitness accounts — unverified and
+          inherently subjective. Snapshot built {new Date(stats.generatedAt).toLocaleDateString()}.
+        </p>
+      </footer>
+    </main>
+  );
 }
