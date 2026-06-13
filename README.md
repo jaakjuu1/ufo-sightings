@@ -1,36 +1,96 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🛸 UFO Sightings Atlas
 
-## Getting Started
+An interactive dashboard built on **real** UFO sighting data — **80,332 eyewitness
+reports** filed with the [National UFO Reporting Center (NUFORC)](https://nuforc.org)
+between 1906 and 2014, across 5 countries.
 
-First, run the development server:
+It turns a raw public dataset into something genuinely useful for anyone curious
+about UFO phenomena: where sightings cluster, what shapes people report, when
+they happen (time of day, season, decade), how long they last, and a searchable,
+mappable view of every individual report.
+
+## What it shows
+
+- **Headline stats** — total reports, most-reported shape, peak year, most active
+  hour of day, median sighting duration, distinct shape count.
+- **Reports per year** — the dramatic rise from a handful in the 1950s to the
+  late-2000s peak.
+- **Time-of-day, month and weekday** distributions — sightings cluster heavily
+  after dark and in the summer months.
+- **Shape breakdown** — lights, triangles, circles, fireballs and more, color-coded
+  consistently across the whole app.
+- **Duration distribution** — most encounters are brief (the median is ~3 minutes).
+- **Geography** — top countries, top U.S. states, and top cities (hotspots).
+- **Shape trends by decade** — how the mix of reported shapes shifted over time.
+- **Interactive explorer** — a dark world map plus a searchable, filterable,
+  paginated list. Filter by country, shape, year range, or free-text keyword
+  (e.g. `area 51`, `boomerang`, `hovering`), and click any point or row for the
+  full report.
+
+## Data
+
+The dataset is a scrubbed, geocoded, time-standardized export of NUFORC's public
+report database (via [`planetsig/ufo-reports`](https://github.com/planetsig/ufo-reports)).
+
+`scripts/build-data.mjs` downloads the source CSV, cleans it (HTML-entity decoding,
+date/coordinate/duration parsing, country/state normalization) and produces two
+committed artifacts the app ships with:
+
+| File | Contents | Size |
+| --- | --- | --- |
+| `src/data/stats.json` | Aggregate analytics over all reports (powers the dashboard) | ~8 KB |
+| `src/data/sightings.json` | Full cleaned record set (served, filtered & sampled, via the API) | ~24 MB |
+
+Regenerate the data (e.g. to refresh from upstream) with:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm run build:data
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+> ⚠️ These are **unverified eyewitness accounts**, inherently subjective and
+> reporting-biased (overwhelmingly U.S./English-speaking). Treat the patterns as
+> *patterns in how people report sightings*, not confirmed observations.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Architecture
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- **Next.js 16 (App Router)**, React 19, TypeScript.
+- The home page is a **server component** that reads the small `stats.json` and
+  renders the dashboard with **dependency-free SVG/CSS charts** (`src/components/charts.tsx`).
+- `GET /api/sightings` queries the full dataset in memory and supports
+  `search`, `country`, `state`, `shape`, `yearFrom`, `yearTo`, `limit`, `offset`,
+  and a `map=1&max=N` down-sampling mode for the map.
+- The interactive map uses **Leaflet** (canvas circle markers, dynamically
+  imported so it never runs during SSR).
 
-## Learn More
+## Develop
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+npm install
+npm run build:data   # optional — committed data already present
+npm run dev          # http://localhost:3000
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Deploy
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Builds to a standalone Next.js server and ships as a Docker image:
 
-## Deploy on Vercel
+```bash
+docker build -t ufo-sightings .
+docker run -p 3000:3000 ufo-sightings
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+The bundled dataset is traced into the standalone output, so the container needs
+**no network access at runtime**. GitHub Actions workflows publish the image to GHCR.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## API examples
+
+```bash
+# Triangle sightings in Texas, 2008–2010
+curl "localhost:3000/api/sightings?shape=triangle&country=us&state=tx&yearFrom=2008&yearTo=2010"
+
+# Anything mentioning "area 51"
+curl "localhost:3000/api/sightings?search=area%2051"
+
+# Up to 3,000 map points for fireballs
+curl "localhost:3000/api/sightings?shape=fireball&map=1&max=3000"
+```
