@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useRef, useState, useEffect, Suspense } from 'react';
+import type { GlobeMethods } from 'react-globe.gl';
 import { UFOSighting } from '@/lib/ufo-api';
 
 // Fallback component when WebGL fails
@@ -39,7 +40,7 @@ const GlobeLoader: React.FC = () => (
 
 const UFOGlobe: React.FC<{ sightings: UFOSighting[] }> = ({ sightings }) => {
   const [useFallback, setUseFallback] = useState(false);
-  const [GlobeComponent, setGlobeComponent] = useState<React.ComponentType<any> | null>(null);
+  const [GlobeComponent, setGlobeComponent] = useState<React.ComponentType<Record<string, unknown>> | null>(null);
 
   useEffect(() => {
     // Check for WebGL support
@@ -64,11 +65,11 @@ const UFOGlobe: React.FC<{ sightings: UFOSighting[] }> = ({ sightings }) => {
             }).catch(() => {
               setUseFallback(true);
             });
-          } catch (e) {
+          } catch {
             setUseFallback(true);
           }
         }
-      } catch (e) {
+      } catch {
         setUseFallback(true);
       }
     };
@@ -98,7 +99,15 @@ const UFOGlobe: React.FC<{ sightings: UFOSighting[] }> = ({ sightings }) => {
 
 // Wrapper component that uses the actual Globe
 const GlobeWrapper: React.FC<{ sightings: UFOSighting[] }> = ({ sightings }) => {
-  const globeEl = useRef<any>(undefined);
+  type GlobePoint = {
+    lat: number;
+    lng: number;
+    size: number;
+    color: string;
+    sighting: UFOSighting;
+  };
+
+  const globeEl = useRef<GlobeMethods | undefined>(undefined);
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
   const [error, setError] = useState(false);
 
@@ -176,7 +185,10 @@ const GlobeWrapper: React.FC<{ sightings: UFOSighting[] }> = ({ sightings }) => 
           labelsData={points}
           labelLat="lat"
           labelLng="lng"
-          labelText={(d: any) => `${d.sighting.city}, ${d.sighting.country}`}
+          labelText={(d: object) => {
+            const point = d as GlobePoint;
+            return `${point.sighting.city}, ${point.sighting.country}`;
+          }}
           labelSize={1.2}
           labelDotRadius={0.5}
           labelColor={() => 'rgba(255, 255, 255, 0.9)'}
